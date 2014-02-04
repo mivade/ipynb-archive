@@ -134,7 +134,7 @@ def archive():
     ipy_files = sorted(glob.glob("*.ipynb"))
     prefixes = [pre[:-len(".ipynb")] for pre in ipy_files]
 
-    cmd = nb_html_basic
+    cmd = nb_html_full
     for prefix in prefixes:
         fname = prefix + ".ipynb"
         if fname in ignore:
@@ -151,6 +151,8 @@ def archive():
                                           header_close, title_line, html, footer])
                     
     if archive_dir != '.':
+        if not os.path.exists(archive_dir):
+            os.makedirs(archive_dir)
         for filename in glob.glob("*.html"):
             shutil.copy(filename, archive_dir)
 
