@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-archive.py
+nbarchive.py
 
 A simple script for archiving ipynb files into non-mutable HTML
 format.
@@ -112,8 +112,8 @@ def archive():
     parser.add_argument("--overwrite", action="store_true",
                         help="Overwrite HTML files which already exist.")
     parser.add_argument("--index-file", default="_NONE_", nargs='?',
-                        help="Create an index file. If no filename is given," + \
-                        "the index file will be named index.html.")
+                        help="Create an index file. If no filename " + \
+                        "is given, the index file will be named index.html.")
     parser.add_argument("--index-title", default="Archived ipynb file list",
                         help="Index file title.")
     args = parser.parse_args()
@@ -147,8 +147,10 @@ def archive():
                     html_file.seek(0)
                     html_title = "<title>" + prefix + "</title>"
                     title_line = "<h1>" + prefix + "</h1>"
-                    html_file.writelines([header_open, html_title, stylesheet, mathjax,
-                                          header_close, title_line, html, footer])
+                    html_file.writelines([header_open, html_title,
+                                          stylesheet, mathjax,
+                                          header_close, title_line,
+                                          html, footer])
                     
     if archive_dir != '.':
         if not os.path.exists(archive_dir):
@@ -162,11 +164,15 @@ def archive():
                  open(args.index_file, "w") as index_file:
             index_list.write("<p><b>File list</b></p>\n<p>")
             for prefix in prefixes:
-                index_list.write('<a href=%s target="content">%s</a><br/>\n' % \
-                                 (prefix + ".html", prefix))
-            index_source = re.sub("\$INDEX_TITLE", args.index_title, index_template)
-            index_source = re.sub("\$FIRST_FILE", prefixes[0] + ".html", index_source)
+                index_list.write('<a href=%s target="content">%s</a><br/>\n' % (prefix + ".html", prefix))
+            index_source = re.sub("\$INDEX_TITLE", args.index_title,
+                                  index_template)
+            index_source = re.sub("\$FIRST_FILE", prefixes[0] + ".html",
+                                  index_source)
             index_file.write(index_source + "\n</p>")
+
+# Main
+# ----
 
 if __name__ == "__main__":
     archive()
