@@ -6,8 +6,10 @@ A simple script for archiving ipynb files into non-mutable HTML
 format.
 
 TODO: Statistics on files added compared to already existing and
-      overwritten
-TODO: Message if nothing is done
+      overwritten.
+TODO: Message if nothing is done.
+TODO: Command-line option to add to the ignore list.
+TOOD: Simple GUI interface.
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -25,7 +27,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
 from __future__ import print_function
-import os, os.path, glob, shutil, argparse, re
+import os, os.path, glob, shutil, argparse, re, urllib2
 
 # Configuration
 # -------------
@@ -106,18 +108,8 @@ def nbconvert_cmd(nbcmd, fname, echo=True):
         print(cmd)
     os.system(cmd)
 
-def archive():
+def archive(args, directory="."):
     """Perform the archival of ipynb files."""
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--overwrite", action="store_true",
-                        help="Overwrite HTML files which already exist.")
-    parser.add_argument("--index-file", default="_NONE_", nargs='?',
-                        help="Create an index file. If no filename " + \
-                        "is given, the index file will be named index.html.")
-    parser.add_argument("--index-title", default="Archived ipynb file list",
-                        help="Index file title.")
-    args = parser.parse_args()
-
     if args.overwrite:
         overwrite = True
     else:
@@ -130,11 +122,13 @@ def archive():
         write_index = True
     else:
         write_index = False
-    
+
+    if directory is not ".":
+        os.chdir(directory)
     ipy_files = sorted(glob.glob("*.ipynb"))
     prefixes = [pre[:-len(".ipynb")] for pre in ipy_files]
 
-    cmd = nb_html_full
+    cmd = nb_html_basic
     for prefix in prefixes:
         fname = prefix + ".ipynb"
         if fname in ignore:
@@ -160,6 +154,11 @@ def archive():
 
     if write_index:
         os.chdir(archive_dir)
+        if not os.path.exists("ipython.css"):
+            url = urllib2.urlopen("https://github.com/mivade/ipynb-archive/raw/master/archives/ipython.css")
+            css_str = url.read()
+            with open("ipython.css", 'w') as css_file:
+                css_file.write(css_str)
         with open("_index.html", "w") as index_list, \
                  open(args.index_file, "w") as index_file:
             index_list.write("<p><b>File list</b></p>\n<p>")
@@ -171,8 +170,15 @@ def archive():
                                   index_source)
             index_file.write(index_source + "\n</p>")
 
-# Main
-# ----
-
 if __name__ == "__main__":
-    archive()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--overwrite", action="store_true",
+                        help="Overwrite HTML files which already exist.")
+    parser.add_argument("--index-file", default="_NONE_", nargs='?',
+                        help="Create an index file. If no filename " + \
+                        "is given, the index file will be named index.html.")
+    parser.add_argument("--index-title", default="Archived ipynb file list",
+                        help="Index file title.")
+    args = parser.parse_args()
+    
+    archive(args, ".")
