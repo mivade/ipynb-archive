@@ -8,8 +8,10 @@ format.
 TODO: Statistics on files added compared to already existing and
       overwritten.
 TODO: Message if nothing is done.
-TODO: Command-line option to add to the ignore list.
 TOOD: Simple GUI interface.
+
+FIXME: Currently always overwrites files. This has to do with the
+       moving to a different directory for archival.
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -35,18 +37,16 @@ import os, os.path, glob, shutil, argparse, re, urllib2
 # Files to ignore for archival.
 ignore = ['Template.ipynb']
 
+# Default archives directory.
+archive_dir = "archives"
+
 # nbconvert commands that can be used.
 nb_basic = "ipython nbconvert --to "
 nb_html_full = nb_basic + "html --template full"
 nb_html_basic = nb_basic + "html --template basic"
 
-# Directory to move archived files to. Set to '.' to keep in the same
-# directory. For now you'll have to place the ipython.css file in
-# there manually.
-archive_dir = "archives"
-
-# HTML strings
-# ------------
+# String constants
+# ----------------
 
 header_open = """<!DOCTYPE html>
 <html>
@@ -98,6 +98,9 @@ index_template = """<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Frameset//EN"
 </HTML>
 """
 
+# URL of the ipython.css file
+css_url = "https://github.com/mivade/ipynb-archive/raw/master/archives/ipython.css"
+
 # Function definitions
 # --------------------
 
@@ -128,10 +131,15 @@ def archive(args, directory="."):
     ipy_files = sorted(glob.glob("*.ipynb"))
     prefixes = [pre[:-len(".ipynb")] for pre in ipy_files]
 
+    if args.ignore:
+        ignore_ = ignore + args.ignore
+    else:
+        ignore_ = ignore
+
     cmd = nb_html_basic
     for prefix in prefixes:
         fname = prefix + ".ipynb"
-        if fname in ignore:
+        if fname in ignore_:
             continue
         if not os.path.exists(prefix + ".html") or overwrite:
             nbconvert_cmd(cmd, fname)
@@ -146,16 +154,23 @@ def archive(args, directory="."):
                                           header_close, title_line,
                                           html, footer])
                     
-    if archive_dir != '.':
-        if not os.path.exists(archive_dir):
-            os.makedirs(archive_dir)
-        for filename in glob.glob("*.html"):
-            shutil.copy(filename, archive_dir)
+    if args.archive_dir != '.':
+        if not os.path.exists(args.archive_dir):
+            os.makedirs(args.archive_dir)
+        for prefix in prefixes:
+            if prefix + ".ipynb" in ignore_:
+                continue
+            filename = prefix + ".html"
+            try:
+                os.remove(args.archive_dir + "/" + filename)
+            except OSError:
+                pass
+            shutil.move(filename, args.archive_dir)
 
     if write_index:
-        os.chdir(archive_dir)
+        os.chdir(args.archive_dir)
         if not os.path.exists("ipython.css"):
-            url = urllib2.urlopen("https://github.com/mivade/ipynb-archive/raw/master/archives/ipython.css")
+            url = urllib2.urlopen(css_url)
             css_str = url.read()
             with open("ipython.css", 'w') as css_file:
                 css_file.write(css_str)
@@ -163,6 +178,8 @@ def archive(args, directory="."):
                  open(args.index_file, "w") as index_file:
             index_list.write("<p><b>File list</b></p>\n<p>")
             for prefix in prefixes:
+                if prefix + ".ipynb" in ignore_:
+                    continue
                 index_list.write('<a href=%s target="content">%s</a><br/>\n' % (prefix + ".html", prefix))
             index_source = re.sub("\$INDEX_TITLE", args.index_title,
                                   index_template)
@@ -174,11 +191,15 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--overwrite", action="store_true",
                         help="Overwrite HTML files which already exist.")
+    parser.add_argument("--archive-dir", default=archive_dir,
+                        help="Directory to save archives to.")
     parser.add_argument("--index-file", default="_NONE_", nargs='?',
                         help="Create an index file. If no filename " + \
                         "is given, the index file will be named index.html.")
     parser.add_argument("--index-title", default="Archived ipynb file list",
                         help="Index file title.")
+    parser.add_argument("--ignore", nargs="+", default=None,
+                        help="Files to exclude from archival.")
     args = parser.parse_args()
     
     archive(args, ".")
