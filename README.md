@@ -9,17 +9,22 @@ as to avoid accidental changes to the original content.
 ## Usage ##
 
 ```
-usage: nbarchive.py [-h] [--overwrite] [--index-file [INDEX_FILE]]
-                    [--index-title INDEX_TITLE]
+usage: nbarchive.py [-h] [--overwrite] [--archive-dir ARCHIVE_DIR]
+                    [--index-file [INDEX_FILE]] [--index-title INDEX_TITLE]
+                    [--ignore IGNORE [IGNORE ...]]
 
 optional arguments:
   -h, --help            show this help message and exit
   --overwrite           Overwrite HTML files which already exist.
+  --archive-dir ARCHIVE_DIR
+                        Directory to save archives to.
   --index-file [INDEX_FILE]
                         Create an index file. If no filename is given, the
                         index file will be named index.html.
   --index-title INDEX_TITLE
                         Index file title.
+  --ignore IGNORE [IGNORE ...]
+                        Files to exclude from archival.
 ```
 
 ## Requirements ##
